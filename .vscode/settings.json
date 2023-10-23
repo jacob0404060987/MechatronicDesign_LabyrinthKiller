@@ -1,0 +1,6 @@
+{
+    "files.associations": {
+        "movement.h": "c",
+        "hframework.h": "c"
+    }
+}

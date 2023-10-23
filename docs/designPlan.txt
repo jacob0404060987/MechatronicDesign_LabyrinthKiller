@@ -1,0 +1,40 @@
+SOFTWARE PLAN:
+1. Sterowanie napędem:
+	-jazda przód/tył
+	-skręcanie prawo/lewo
+	-
+	-
+	-
+2. Odczyt z czujników odległości:
+	-
+	-
+	-
+	-
+3. Odczyt z IMU:
+	-
+	-
+	-
+	-
+4. Algorytm wychodzenia z labiryntu na podstawie odległośći od ścian:
+	-
+	-	
+	-
+	-
+5. Alogrytm pracy krokowej:
+	-
+	-
+	-
+	-	
+	-
+6. Komunikacja z ESP, podłączenie ESP do sieci:
+	-
+	-
+	-
+	-
+	-
+	-
+7. Apka na android do sterowania:
+	-
+	-
+	-
+	-
