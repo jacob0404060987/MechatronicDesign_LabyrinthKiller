@@ -9,12 +9,13 @@ DistanceSensor sens_front(hSens3);
 DistanceSensor sens_left(hSens4);
 DistanceSensor sens_right(hSens1);
 
-const int16_t set_distance=30;
+const int16_t set_distance=10;
 static int16_t act_distance=0;
 static int16_t diff_distance;
 static int16_t act_left_dist;
 static int16_t act_right_dist;
 static int16_t diff_side;
+
 
 void onPress() // instruction executed by clicking the buttson 
 {
@@ -29,14 +30,14 @@ void onPress() // instruction executed by clicking the buttson
 
 void motorStartFwd(void)
 {
-	motor_right.setPower(-300);
-	motor_left.setPower(-300);
+	motor_right.setPower(-400);
+	motor_left.setPower(-400);
 }
 
 void motorStartBwd(void)
 {
-	motor_right.setPower(300);
-	motor_left.setPower(300);
+	motor_right.setPower(400);
+	motor_left.setPower(400);
 }
 
 void motorStop(void)
@@ -53,25 +54,69 @@ void motorTurnLeft(void)
 
 void motorTurnRight(void)
 {
-	motor_right.setPower(450);
-	motor_left.setPower(-450);
+	motor_right.setPower(250);
+	motor_left.setPower(-250);
 }
 
 void motorCorrectionLeft(void)
 {
-	motor_right.setPower(-350);
-	motor_left.setPower(-150);
+	motor_right.setPower(-400);
+	motor_left.setPower(-100);
 }
 
 void motorCorrectionRight(void)
 {
-	motor_right.setPower(-150);
-	motor_left.setPower(-350);
+	motor_right.setPower(-100);
+	motor_left.setPower(-400);
 }
 void hInit(void)
 {
 
 }
+
+
+
+void pathCorrection(void)
+{
+	if(diff_side < -5 )
+		{
+			motorCorrectionRight();
+		}else if (diff_side > 5 )
+		{
+			motorCorrectionLeft();
+		}else
+		{
+			motorStartFwd();
+		}
+}
+
+
+bool frontCheck(void)
+{
+	if(diff_distance < -3)
+	{
+		return false;
+	}else
+	{
+		return true;
+	}
+}
+
+void rightCheck(void)
+{
+	if(act_right_dist < 10)
+	{	
+		motorCorrectionLeft();
+	}else if(act_right_dist > 20)
+	{
+		motorCorrectionRight();
+	}else
+	{
+		motorStartFwd();
+	}
+}
+
+
 void hMain()
 {
 	hInit();
@@ -85,24 +130,16 @@ void hMain()
 		diff_distance = set_distance - act_distance;
 		diff_side = act_left_dist - act_right_dist; // ujemna wtedy kiedy blizej lewej
         if(programRun){
-		/*if(diff_distance>5)
+		if(frontCheck())
 		{
-			motorStartBwd();
-		}else if(diff_distance<-5)
+			motorStop();
+			sys.delay(20);
+			motorTurnLeft();
+			sys.delay(1000);
+		}else if(!frontCheck())
 		{
-			motorStartFwd();
-		}else{
-		motorTurnRight();
-		sys.delay(1000);*/
-		if(diff_side < -5)
-		{
-			motorCorrectionRight();
-		}else if (diff_side > 5)
-		{
-			motorCorrectionLeft();
-		}else
-		{
-			motorStartFwd();
+			//pathCorrection();
+			rightCheck();
 		}
         }else if(!programRun)
 		{
