@@ -6,15 +6,19 @@ static bool programRun=false;
 using namespace hModules;
 
 DistanceSensor sens_front(hSens3);
-DistanceSensor sens_left(hSens4);
+DistanceSensor sens_front_2(hSens4);
 DistanceSensor sens_right(hSens1);
 
-const int16_t set_distance=10;
+const int16_t set_distance=16;
 static int16_t act_distance=0;
-static int16_t diff_distance;
+static int16_t act_distance_right;
+static int16_t act_distance_left;
+static int16_t diff_distanceLeft;
+static int16_t diff_distanceRight;
 static int16_t act_left_dist;
 static int16_t act_right_dist;
 static int16_t diff_side;
+const int16_t base_speed = -400;
 
 
 void onPress() // instruction executed by clicking the buttson 
@@ -30,8 +34,8 @@ void onPress() // instruction executed by clicking the buttson
 
 void motorStartFwd(void)
 {
-	motor_right.setPower(-400);
-	motor_left.setPower(-400);
+	motor_right.setPower(-250);
+	motor_left.setPower(-250);
 }
 
 void motorStartBwd(void)
@@ -93,7 +97,7 @@ void pathCorrection(void)
 
 bool frontCheck(void)
 {
-	if(diff_distance < -3)
+	if(diff_distanceLeft < -3 || diff_distanceRight <-3)
 	{
 		return false;
 	}else
@@ -104,35 +108,56 @@ bool frontCheck(void)
 
 void rightCheck(void)
 {
-	if(act_right_dist < 10)
+	if(act_right_dist < 16)
 	{	
 		motorCorrectionLeft();
-	}else if(act_right_dist > 20)
+	}else if(act_right_dist > 20 && act_right_dist <= 70)
 	{
 		motorCorrectionRight();
-	}else
+	}else if(act_right_dist > 70)
 	{
-		motorStartFwd();
-	}
+	motorCorrectionRight();
+		}
 }
 
+void regulator(const int16_t setPiont, int16_t value, uint32_t gain)
+{
+	static int16_t feedback; 
+	feedback = setPiont - value;
+	static int16_t powerDiff;
+	powerDiff = feedback * gain;
+	if(feedback > 0) //za blisko
+	{
+		motor_right.setPower(base_speed + base_speed*powerDiff);
+		motor_left.setPower(base_speed - base_speed*powerDiff);
+
+
+	}else if(feedback < 0)
+	{
+		motor_right.setPower(base_speed - base_speed*powerDiff);
+		motor_left.setPower(base_speed + base_speed*powerDiff);
+
+	}
+
+	
+}
 
 void hMain()
 {
 	hInit();
 	while (true)
 	{
-		sys.delay(20);
+		//sys.delay(20);
         hBtn1.setOnPressHandler(onPress);
-		act_distance = sens_front.getDistance();
-		act_left_dist = sens_left.getDistance();
+		act_distance_right = sens_front.getDistance();
+		act_distance_left = sens_front_2.getDistance();
 		act_right_dist = sens_right.getDistance();
-		diff_distance = set_distance - act_distance;
+		diff_distanceLeft = set_distance - act_distance_left;
+		diff_distanceRight = set_distance - act_distance_right;
 		diff_side = act_left_dist - act_right_dist; // ujemna wtedy kiedy blizej lewej
         if(programRun){
 		if(frontCheck())
 		{
-			motorStop();
 			sys.delay(20);
 			motorTurnLeft();
 			sys.delay(1000);
