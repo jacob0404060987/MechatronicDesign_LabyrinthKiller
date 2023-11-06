@@ -10,7 +10,6 @@ DistanceSensor sens_front_2(hSens4);
 DistanceSensor sens_right(hSens1);
 
 const int16_t set_distance=16;
-static int16_t act_distance=0;
 static int16_t act_distance_right;
 static int16_t act_distance_left;
 static int16_t diff_distanceLeft;
@@ -18,7 +17,7 @@ static int16_t diff_distanceRight;
 static int16_t act_left_dist;
 static int16_t act_right_dist;
 static int16_t diff_side;
-const int16_t base_speed = -400;
+const int16_t base_speed = -250;
 
 
 void onPress() // instruction executed by clicking the buttson 
@@ -126,18 +125,18 @@ void regulator(const int16_t setPiont, int16_t value, uint32_t gain)
 	feedback = setPiont - value;
 	static int16_t powerDiff;
 	powerDiff = feedback * gain;
-	if(feedback > 0) //za blisko
-	{
-		motor_right.setPower(base_speed + base_speed*powerDiff);
-		motor_left.setPower(base_speed - base_speed*powerDiff);
+	 //za blisko
+		if(feedback > -15 && feedback < 15 ){
+		motor_right.setPower(base_speed - powerDiff);
+		motor_left.setPower(base_speed + powerDiff);
+		}else if(feedback>=15)
+		{
+			motorCorrectionLeft();
+		}else if(feedback <=-15)
+		{
+			motorCorrectionRight();
+		}
 
-
-	}else if(feedback < 0)
-	{
-		motor_right.setPower(base_speed - base_speed*powerDiff);
-		motor_left.setPower(base_speed + base_speed*powerDiff);
-
-	}
 
 	
 }
@@ -156,21 +155,23 @@ void hMain()
 		diff_distanceRight = set_distance - act_distance_right;
 		diff_side = act_left_dist - act_right_dist; // ujemna wtedy kiedy blizej lewej
         if(programRun){
-		if(frontCheck())
+		if(frontCheck() || act_distance_left ==-1 || act_distance_right ==-1)
 		{
 			sys.delay(20);
 			motorTurnLeft();
-			sys.delay(1000);
+			sys.delay(30);
 		}else if(!frontCheck())
 		{
 			//pathCorrection();
-			rightCheck();
+			//rightCheck();
+			
+			regulator(16,act_right_dist,7);
 		}
         }else if(!programRun)
 		{
 			motorStop();
 		}
-		Serial.printf("Left: %5d, Right: %5d, Front: %5d \n",act_left_dist, act_right_dist, act_distance);
+		Serial.printf("Left: %5d, Right: %5d, Front: %5d \n",act_distance_left, act_distance_right, act_right_dist);
 	}
 }
 
