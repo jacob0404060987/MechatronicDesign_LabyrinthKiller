@@ -9,7 +9,7 @@ DistanceSensor sens_front(hSens3);
 DistanceSensor sens_front_2(hSens4);
 DistanceSensor sens_right(hSens1);
 
-const int16_t set_distance=12;
+const int16_t set_distance=20;
 static int16_t act_distance_right;
 static int16_t act_distance_left;
 static int16_t diff_distanceLeft;
@@ -72,6 +72,12 @@ void motorCorrectionRight(void)
 	motor_right.setPower(-100);
 	motor_left.setPower(-400);
 }
+void hInit(void)
+{
+
+}
+
+
 
 void pathCorrection(void)
 {
@@ -90,7 +96,7 @@ void pathCorrection(void)
 
 bool frontCheck(void)
 {
-	if(diff_distanceLeft < 0 || diff_distanceRight < 0)
+	if(diff_distanceLeft < -3 || diff_distanceRight <-3 )
 	{
 		return false;
 	}else
@@ -99,27 +105,40 @@ bool frontCheck(void)
 	}
 }
 
+void rightCheck(void)
+{
+	if(act_right_dist < 16)
+	{	
+		motorCorrectionLeft();
+	}else if(act_right_dist > 20 && act_right_dist <= 70)
+	{
+		motorCorrectionRight();
+	}else if(act_right_dist > 70)
+	{
+	motorCorrectionRight();
+		}
+}
 
 void regulator(const int16_t setPiont, int16_t value, uint32_t gain)
 {
 	static int16_t feedback; 
 	feedback = setPiont - value;
 	static int16_t powerDiff;
-	if(feedback > -5 && feedback < 5)
-	{
-		gain*=5;
-	}
 	powerDiff = feedback * gain;
 	 //za blisko
-		if(feedback > -25 && feedback < 25 ){
+		if(feedback > -15 && feedback < 15 ){
 		motor_right.setPower(base_speed - powerDiff);
 		motor_left.setPower(base_speed + powerDiff);
-		}else if(feedback>=25)
+		}else if(feedback>=15)
 		{
 			motorCorrectionLeft();
-		}else if(feedback <=-25)
+		}else if(feedback <=-15)
 		{
 			motorCorrectionRight();
+		}
+		if(act_right_dist == -1)
+		{
+			motorTurnLeft();
 		}
 
 
@@ -128,7 +147,7 @@ void regulator(const int16_t setPiont, int16_t value, uint32_t gain)
 
 void hMain()
 {
-	
+	hInit();
 	while (true)
 	{
 		//sys.delay(20);
@@ -140,18 +159,26 @@ void hMain()
 		diff_distanceRight = set_distance - act_distance_right;
 		diff_side = act_left_dist - act_right_dist; // ujemna wtedy kiedy blizej lewej
         if(programRun){
-		if(!frontCheck())
+		if(frontCheck() || act_distance_left ==-1 || act_distance_right ==-1)
 		{
-			regulator(10,act_right_dist,7);
-		}else
-		{	
+			while(act_distance_left<13 || act_distance_right <13 ){
 			motorTurnLeft();
+		
+				act_distance_right = sens_front.getDistance();
+				act_distance_left = sens_front_2.getDistance();
+			}
+		}else if(!frontCheck())
+		{
+			//pathCorrection();
+			//rightCheck();
+			
+			regulator(15,act_right_dist,7);
 		}
         }else if(!programRun)
 		{
 			motorStop();
 		}
-		Serial.printf("Left: %5d, Right: %5d, Front: %5d \n",act_distance_left, act_distance_right, act_right_dist);
+		Serial.printf("Left: %5d, Right: %5d, side: %5d \n",act_distance_left, act_distance_right, act_right_dist);
 	}
 }
 
