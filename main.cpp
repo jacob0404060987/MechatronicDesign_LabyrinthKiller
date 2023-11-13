@@ -9,7 +9,7 @@ DistanceSensor sens_front(hSens3);
 DistanceSensor sens_front_2(hSens4);
 DistanceSensor sens_right(hSens1);
 
-const int16_t set_distance=16;
+const int16_t set_distance=20;
 static int16_t act_distance_right;
 static int16_t act_distance_left;
 static int16_t diff_distanceLeft;
@@ -96,7 +96,7 @@ void pathCorrection(void)
 
 bool frontCheck(void)
 {
-	if(diff_distanceLeft < -3 || diff_distanceRight <-3)
+	if(diff_distanceLeft < -3 || diff_distanceRight <-3 )
 	{
 		return false;
 	}else
@@ -136,6 +136,10 @@ void regulator(const int16_t setPiont, int16_t value, uint32_t gain)
 		{
 			motorCorrectionRight();
 		}
+		if(act_right_dist == -1)
+		{
+			motorTurnLeft();
+		}
 
 
 	
@@ -157,21 +161,24 @@ void hMain()
         if(programRun){
 		if(frontCheck() || act_distance_left ==-1 || act_distance_right ==-1)
 		{
-			sys.delay(20);
+			while(act_distance_left<13 || act_distance_right <13 ){
 			motorTurnLeft();
-			sys.delay(30);
+		
+				act_distance_right = sens_front.getDistance();
+				act_distance_left = sens_front_2.getDistance();
+			}
 		}else if(!frontCheck())
 		{
 			//pathCorrection();
 			//rightCheck();
 			
-			regulator(16,act_right_dist,7);
+			regulator(15,act_right_dist,7);
 		}
         }else if(!programRun)
 		{
 			motorStop();
 		}
-		Serial.printf("Left: %5d, Right: %5d, Front: %5d \n",act_distance_left, act_distance_right, act_right_dist);
+		Serial.printf("Left: %5d, Right: %5d, side: %5d \n",act_distance_left, act_distance_right, act_right_dist);
 	}
 }
 
