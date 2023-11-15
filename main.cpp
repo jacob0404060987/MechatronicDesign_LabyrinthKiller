@@ -190,9 +190,9 @@ void stepWorkStateMachine(uint8_t* ctr)
 	{
 	case IDLE_STATE:
 		regulator(15,act_right_dist,7);
-		if(frontCheck || act_distance_left ==-1 || act_distance_right ==-1)
+		if(frontCheck() || act_distance_left ==-1 || act_distance_right ==-1)
 		{
-			*ctr++;
+			*ctr=FRONT_CHECK_STATE;
 		}
 		break;
 	case FRONT_CHECK_STATE:
