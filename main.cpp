@@ -1,7 +1,12 @@
 #include <hFramework.h>
 #include <hModules/DistanceSensor.h>
 
+#define IDLE_STATE 0
+#define FRONT_CHECK_STATE 1
+#define TURNING_LEFT_STATE 2
+
 static bool programRun=false;
+static bool stepWorkMode=false;
 
 using namespace hModules;
 
@@ -19,9 +24,13 @@ static int16_t act_right_dist;
 static int16_t diff_side;
 const int16_t base_speed = -250;
 
+static uint8_t stepCounter;
 
-void onPress() // instruction executed by clicking the buttson 
+
+
+void onPress(void) // instruction executed by clicking the buttson 
 {
+	if(!stepWorkMode){
 	if(programRun)
     {
         programRun=false;
@@ -29,6 +38,26 @@ void onPress() // instruction executed by clicking the buttson
     {
         programRun=true;
     }
+	}else{
+		if(stepCounter==FRONT_CHECK_STATE){
+		stepCounter=TURNING_LEFT_STATE;
+		}else if(stepCounter == TURNING_LEFT_STATE)
+		{
+		stepCounter=IDLE_STATE;
+		}
+	}
+}
+
+void stepWork(void)
+{
+	programRun=false;
+	if(stepWorkMode)
+    	{
+   	     stepWorkMode=false;
+    	}else if(!stepWorkMode)
+   	 {
+        stepWorkMode=true;
+   	 }
 }
 
 void motorStartFwd(void)
@@ -138,11 +167,44 @@ void regulator(const int16_t setPiont, int16_t value, uint32_t gain)
 		}
 		if(act_right_dist == -1)
 		{
-			motorTurnLeft();
+			motorTurnLeft();//DO SPRAWDZENIA CZY TO SIE DZIEJE
 		}
 
 
 	
+}
+
+void motorSpinLeft(void)
+{
+	while(act_distance_left<13 || act_distance_right <13 ){
+			motorTurnLeft();
+		
+				act_distance_right = sens_front.getDistance();
+				act_distance_left = sens_front_2.getDistance();
+			}
+}
+
+void stepWorkStateMachine(uint8_t* ctr)
+{
+	switch (*ctr)
+	{
+	case IDLE_STATE:
+		regulator(15,act_right_dist,7);
+		if(frontCheck || act_distance_left ==-1 || act_distance_right ==-1)
+		{
+			*ctr++;
+		}
+		break;
+	case FRONT_CHECK_STATE:
+		motorStop();
+		break;
+	case TURNING_LEFT_STATE:
+		motorSpinLeft();
+		motorStop();
+		break;
+	default:
+		break;
+	}
 }
 
 void hMain()
@@ -150,35 +212,37 @@ void hMain()
 	hInit();
 	while (true)
 	{
-		//sys.delay(20);
+		
         hBtn1.setOnPressHandler(onPress);
+		hBtn2.setOnPressHandler(stepWork);
 		act_distance_right = sens_front.getDistance();
 		act_distance_left = sens_front_2.getDistance();
 		act_right_dist = sens_right.getDistance();
 		diff_distanceLeft = set_distance - act_distance_left;
 		diff_distanceRight = set_distance - act_distance_right;
 		diff_side = act_left_dist - act_right_dist; // ujemna wtedy kiedy blizej lewej
-        if(programRun){
+        if(programRun && !stepWorkMode){
 		if(frontCheck() || act_distance_left ==-1 || act_distance_right ==-1)
 		{
-			while(act_distance_left<13 || act_distance_right <13 ){
-			motorTurnLeft();
-		
-				act_distance_right = sens_front.getDistance();
-				act_distance_left = sens_front_2.getDistance();
-			}
+
+				motorSpinLeft();
+
 		}else if(!frontCheck())
 		{
-			//pathCorrection();
-			//rightCheck();
+			
 			
 			regulator(15,act_right_dist,7);
 		}
-        }else if(!programRun)
+        }else if(!programRun && !stepWorkMode)
 		{
 			motorStop();
 		}
-		Serial.printf("Left: %5d, Right: %5d, side: %5d \n",act_distance_left, act_distance_right, act_right_dist);
+		if(stepWorkMode)
+		{
+			stepWorkStateMachine(&stepCounter);
+		}
+	
+		
 	}
 }
 
