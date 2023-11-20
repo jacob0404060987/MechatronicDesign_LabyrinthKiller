@@ -125,7 +125,7 @@ void pathCorrection(void)
 
 bool frontCheck(void)
 {
-	if(diff_distanceLeft < -3 || diff_distanceRight <-3 )
+	if(act_distance_left < 13 || act_distance_right <13)
 	{
 		return false;
 	}else
@@ -177,20 +177,19 @@ void regulator(const int16_t setPiont, int16_t value, uint32_t gain)
 void motorSpinLeft(void)
 {
 	while(act_distance_left<13 || act_distance_right <13 ){
-			motorTurnLeft();
-		
+				motorTurnLeft();
 				act_distance_right = sens_front.getDistance();
 				act_distance_left = sens_front_2.getDistance();
 			}
 }
 
-void stepWorkStateMachine(uint8_t* ctr)
+void stepWorkStateMachine(uint8_t* const ctr)
 {
 	switch (*ctr)
 	{
 	case IDLE_STATE:
 		regulator(15,act_right_dist,7);
-		if(frontCheck() || act_distance_left ==-1 || act_distance_right ==-1)
+		if(!frontCheck())
 		{
 			*ctr=FRONT_CHECK_STATE;
 		}
@@ -222,9 +221,9 @@ void hMain()
 		diff_distanceRight = set_distance - act_distance_right;
 		diff_side = act_left_dist - act_right_dist; // ujemna wtedy kiedy blizej lewej
         if(programRun && !stepWorkMode){
-		if(frontCheck() || act_distance_left ==-1 || act_distance_right ==-1)
+		if(frontCheck())
 		{
-
+			stepCounter=0U;
 				motorSpinLeft();
 
 		}else if(!frontCheck())
@@ -236,13 +235,12 @@ void hMain()
         }else if(!programRun && !stepWorkMode)
 		{
 			motorStop();
-		}
-		if(stepWorkMode)
+		}else if(stepWorkMode)
 		{
 			stepWorkStateMachine(&stepCounter);
 		}
 	
-		
+		Serial.printf("Step work: %d, program run: %d, %d Stan %d, front check %d, lewy: %d prawy %d \n", stepWorkMode, programRun,frontCheck(),act_distance_left,act_distance_right);
 	}
 }
 
